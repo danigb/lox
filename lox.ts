@@ -6,7 +6,6 @@ const filenames = Deno.args;
 for (const filename of filenames) {
   const text = await Deno.readTextFile(filename);
   const scanner = new Scanner(text);
-  const ast = parse(scanner.scanTokens());
-  const value = interpret(ast);
-  console.log(value);
+  const statements = parse(scanner.scanTokens());
+  interpret(statements);
 }

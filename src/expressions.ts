@@ -22,7 +22,7 @@ export type ExprVisitor<T> = {
   visitBinary(expr: Binary): T;
 };
 
-export function visit<T>(expr: Expr, visitor: ExprVisitor<T>): T {
+export function visitExpr<T>(expr: Expr, visitor: ExprVisitor<T>): T {
   switch (expr.type) {
     case "Literal":
       return visitor.visitLiteral(expr);

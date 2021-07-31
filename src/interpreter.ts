@@ -1,25 +1,42 @@
-import { Expr, ExprVisitor, visit } from "./exprs.ts";
+import { Expr, ExprVisitor, visitExpr } from "./expressions.ts";
 import { Token, TokenValue } from "./tokens.ts";
 import { LexError, reportError } from "./errors.ts";
+import { Stmt, StmtVisitor, visitStmt } from "./statements.ts";
 
 class EvalError extends LexError {}
 
 /**
  * https://craftinginterpreters.com/evaluating-expressions.html
  */
-export function interpret(expr: Expr) {
+export function interpret(statements: Stmt[]) {
   try {
-    return evaluate(expr);
+    for (const stmt of statements) {
+      execute(stmt);
+    }
   } catch (err) {
     reportError(err);
   }
 }
 
-function evaluate(expr: Expr): TokenValue {
-  return visit(expr, visitor);
+function execute(stmt: Stmt) {
+  visitStmt(stmt, stmtVisitor);
 }
 
-const visitor: ExprVisitor<TokenValue> = {
+const stmtVisitor: StmtVisitor<void> = {
+  visitExpression(stmt) {
+    evaluate(stmt.expr);
+  },
+  visitPrint(stmt) {
+    const value = evaluate(stmt.expr);
+    console.log(value);
+  },
+};
+
+function evaluate(expr: Expr): TokenValue {
+  return visitExpr(expr, exprVisitor);
+}
+
+const exprVisitor: ExprVisitor<TokenValue> = {
   visitLiteral(expr) {
     return expr.value;
   },

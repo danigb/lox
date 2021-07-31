@@ -1,5 +1,6 @@
 import { Token, TokenType } from "./tokens.ts";
-import { Expr } from "./exprs.ts";
+import { Expr } from "./expressions.ts";
+import { Stmt } from "./statements.ts";
 import { LexError, reportError } from "./errors.ts";
 
 export class ParseError extends LexError {}
@@ -17,14 +18,33 @@ export class ParseError extends LexError {}
  * primary        → NUMBER | STRING | "true" | "false" | "nil"
  *                | "(" expression ")" ;
  */
-export function parse(tokens: Token[]): Expr {
+export function parse(tokens: Token[]): Stmt[] {
   // State
   let current = 0;
 
   // Parse
-  return expression();
+  return program();
 
   // Grammar
+  function program(): Stmt[] {
+    const statements: Stmt[] = [];
+    while (!isAtEnd()) {
+      statements.push(statement());
+    }
+    return statements;
+  }
+
+  function statement(): Stmt {
+    if (match("PRINT")) {
+      const expr = expression();
+      consume("SEMICOLON", "Expect ';' after value.");
+      return { type: "Print", expr };
+    } else {
+      const expr = expression();
+      consume("SEMICOLON", "Expect ';' after value.");
+      return { type: "Expression", expr };
+    }
+  }
 
   function expression(): Expr {
     return equality();
