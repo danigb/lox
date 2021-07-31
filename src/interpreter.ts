@@ -2,46 +2,57 @@ import { Expr, ExprVisitor, visitExpr } from "./expressions.ts";
 import { Token, TokenValue } from "./tokens.ts";
 import { LexError, reportError } from "./errors.ts";
 import { Stmt, StmtVisitor, visitStmt } from "./statements.ts";
+import { Environment } from "./environment.ts";
 
 class EvalError extends LexError {}
 
 /**
  * https://craftinginterpreters.com/evaluating-expressions.html
  */
-export function interpret(statements: Stmt[]) {
-  try {
-    for (const stmt of statements) {
-      execute(stmt);
+export class Interpreter {
+  private readonly environment = new Environment();
+
+  run(statements: Stmt[]) {
+    try {
+      for (const stmt of statements) {
+        execute(stmt, this.environment);
+      }
+    } catch (err) {
+      reportError(err);
     }
-  } catch (err) {
-    reportError(err);
   }
 }
 
-function execute(stmt: Stmt) {
-  visitStmt(stmt, stmtVisitor);
+function execute(stmt: Stmt, env: Environment) {
+  visitStmt(stmt, env, stmtVisitor);
 }
 
-const stmtVisitor: StmtVisitor<void> = {
-  visitExpression(stmt) {
-    evaluate(stmt.expr);
+const stmtVisitor: StmtVisitor<void, Environment> = {
+  visitExpression(stmt, env) {
+    evaluate(stmt.expr, env);
   },
-  visitPrint(stmt) {
-    const value = evaluate(stmt.expr);
+  visitPrint(stmt, env) {
+    const value = evaluate(stmt.expr, env);
     console.log(value);
+  },
+  visitVar(stmt, env) {
+    const value = stmt.value ? evaluate(stmt.value, env) : null;
+    const name = typeof stmt.name === "string" ? stmt.name : "";
+    // FIXME: throw error if no name
+    env.define(name, value);
   },
 };
 
-function evaluate(expr: Expr): TokenValue {
-  return visitExpr(expr, exprVisitor);
+function evaluate(expr: Expr, env: Environment): TokenValue {
+  return visitExpr(expr, env, exprVisitor);
 }
 
-const exprVisitor: ExprVisitor<TokenValue> = {
-  visitLiteral(expr) {
+const exprVisitor: ExprVisitor<TokenValue, Environment> = {
+  visitLiteral(expr, env) {
     return expr.value;
   },
-  visitUnary(expr) {
-    const value = evaluate(expr.right);
+  visitUnary(expr, env) {
+    const value = evaluate(expr.right, env);
     switch (expr.operator.type) {
       case "MINUS": {
         const num = assertNumberOperand(expr.operator, value);
@@ -56,12 +67,12 @@ const exprVisitor: ExprVisitor<TokenValue> = {
     }
   },
 
-  visitGrouping(expr) {
-    return evaluate(expr.expr);
+  visitGrouping(expr, env) {
+    return evaluate(expr.expr, env);
   },
-  visitBinary({ left, operator, right }) {
-    const leftVal = evaluate(left);
-    const rightVal = evaluate(right);
+  visitBinary({ left, operator, right }, env) {
+    const leftVal = evaluate(left, env);
+    const rightVal = evaluate(right, env);
 
     switch (operator.type) {
       case "PLUS": {
@@ -106,6 +117,9 @@ const exprVisitor: ExprVisitor<TokenValue> = {
       default:
         throw error(operator, "not implemented");
     }
+  },
+  visitVariable(expr, env) {
+    return env.get(expr.name);
   },
 };
 

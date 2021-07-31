@@ -13,25 +13,34 @@ export type Binary = {
   right: Expr;
 };
 
-export type Expr = Literal | Unary | Grouping | Binary;
+export type Variable = { type: "Variable"; name: Token };
 
-export type ExprVisitor<T> = {
-  visitLiteral(expr: Literal): T;
-  visitUnary(expr: Unary): T;
-  visitGrouping(expr: Grouping): T;
-  visitBinary(expr: Binary): T;
+export type Expr = Literal | Unary | Grouping | Binary | Variable;
+
+export type ExprVisitor<T, C> = {
+  visitLiteral(expr: Literal, context: C): T;
+  visitUnary(expr: Unary, context: C): T;
+  visitGrouping(expr: Grouping, context: C): T;
+  visitBinary(expr: Binary, context: C): T;
+  visitVariable(expr: Variable, context: C): T;
 };
 
-export function visitExpr<T>(expr: Expr, visitor: ExprVisitor<T>): T {
+export function visitExpr<T, C>(
+  expr: Expr,
+  ctx: C,
+  visitor: ExprVisitor<T, C>
+): T {
   switch (expr.type) {
     case "Literal":
-      return visitor.visitLiteral(expr);
+      return visitor.visitLiteral(expr, ctx);
     case "Unary":
-      return visitor.visitUnary(expr);
+      return visitor.visitUnary(expr, ctx);
     case "Grouping":
-      return visitor.visitGrouping(expr);
+      return visitor.visitGrouping(expr, ctx);
     case "Binary":
-      return visitor.visitBinary(expr);
+      return visitor.visitBinary(expr, ctx);
+    case "Variable":
+      return visitor.visitVariable(expr, ctx);
     default:
       throw new Error("Unknown expression type");
   }

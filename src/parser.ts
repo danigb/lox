@@ -8,6 +8,12 @@ export class ParseError extends LexError {}
 /**
  * https://craftinginterpreters.com/parsing-expressions.html
  *
+ * program        → declaration* EOF ;
+ * declaration    → varDecl
+ *                | statement ;
+ * statement      → exprStmt
+ *                | printStmt ;
+ * varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
  * expression     → equality ;
  * equality       → comparison ( ( "!=" | "==" ) comparison )* ;
  * comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -16,7 +22,8 @@ export class ParseError extends LexError {}
  * unary          → ( "!" | "-" ) unary
  *                | primary ;
  * primary        → NUMBER | STRING | "true" | "false" | "nil"
- *                | "(" expression ")" ;
+ *                | "(" expression ")"
+ *                | IDENTIFIER ;
  */
 export function parse(tokens: Token[]): Stmt[] {
   // State
@@ -29,9 +36,28 @@ export function parse(tokens: Token[]): Stmt[] {
   function program(): Stmt[] {
     const statements: Stmt[] = [];
     while (!isAtEnd()) {
-      statements.push(statement());
+      statements.push(declaration());
     }
     return statements;
+  }
+
+  function declaration(): Stmt {
+    try {
+      if (match("VAR")) {
+        return varDeclaration();
+      }
+      return statement();
+    } catch (err) {
+      synchronize();
+      return statement();
+    }
+  }
+
+  function varDeclaration(): Stmt {
+    const name = consume("IDENTIFIER", "Expect variable name.").lexeme;
+    const value = match("EQUAL") ? expression() : null;
+    consume("SEMICOLON", "Expect ';' after variable declaration.");
+    return { type: "Var", name, value };
   }
 
   function statement(): Stmt {
@@ -113,12 +139,40 @@ export function parse(tokens: Token[]): Stmt[] {
       return { type: "Literal", value: previous().literal };
     }
 
+    if (match("IDENTIFIER")) {
+      return { type: "Variable", name: previous() };
+    }
+
     if (match("LEFT_PAREN")) {
       const expr = expression();
       consume("RIGHT_PAREN", "Expect ')' after expression.");
       return { type: "Grouping", expr };
     }
     throw error(peek(), "Invalid primary expression");
+  }
+
+  // Error handling
+
+  // https://craftinginterpreters.com/parsing-expressions.html#synchronizing-a-recursive-descent-parser
+  function synchronize() {
+    advance();
+
+    while (!isAtEnd()) {
+      if (previous().type === "SEMICOLON") return;
+
+      switch (peek().type) {
+        case "CLASS":
+        case "FUN":
+        case "VAR":
+        case "FOR":
+        case "IF":
+        case "WHILE":
+        case "PRINT":
+        case "RETURN":
+          return;
+      }
+      advance();
+    }
   }
 
   // Utilities
@@ -166,7 +220,7 @@ export function parse(tokens: Token[]): Stmt[] {
     const error =
       token.type === "EOF"
         ? new ParseError(token.line, " at end", cause)
-        : new ParseError(token.line, ` at '${token.lexme}'`, cause);
+        : new ParseError(token.line, ` at '${token.lexeme}'`, cause);
 
     reportError(error);
     return error;

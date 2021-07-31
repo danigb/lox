@@ -52,20 +52,20 @@ export type TokenValue = boolean | number | string | null;
 
 export type Token = {
   readonly type: TokenType;
-  readonly lexme: string;
+  readonly lexeme: string;
   readonly literal: TokenValue;
   readonly line: number;
 };
 
 export function newToken(
   type: TokenType,
-  lexme: string,
+  lexeme: string,
   literal: TokenValue,
   line: number
 ): Token {
   return {
     type,
-    lexme,
+    lexeme,
     literal,
     line,
   };
