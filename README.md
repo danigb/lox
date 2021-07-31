@@ -1,5 +1,5 @@
-# Lex 
+# Lox 
 
-> Lex lang implemented in Typescript and deno.
+> Lox lang implemented in Typescript and deno.
 
-From awesome [craftinginterpreters](https://craftinginterpreters.com/)
+Studying the awesome [craftinginterpreters](https://craftinginterpreters.com/) book.
