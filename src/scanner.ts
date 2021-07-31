@@ -1,60 +1,13 @@
-import { error } from "./errors.ts";
-export type TokenType =
-  // Single-character tokens.
-  | "LEFT_PAREN"
-  | "RIGHT_PAREN"
-  | "LEFT_BRACE"
-  | "RIGHT_BRACE"
-  | "COMMA"
-  | "DOT"
-  | "MINUS"
-  | "PLUS"
-  | "SEMICOLON"
-  | "SLASH"
-  | "STAR"
+import { reportError, LexError } from "./errors.ts";
+import { Token, TokenType, TokenValue, newToken } from "./tokens.ts";
 
-  // One or two character tokens
-  | "BANG"
-  | "BANG_EQUAL"
-  | "EQUAL"
-  | "EQUAL_EQUAL"
-  | "GREATER"
-  | "GREATER_EQUAL"
-  | "LESS"
-  | "LESS_EQUAL"
+class ScanError extends LexError {}
 
-  // Literals
-  | "IDENTIFIER"
-  | "STRING"
-  | "NUMBER"
-
-  // Keywords
-  | "AND"
-  | "CLASS"
-  | "ELSE"
-  | "FALSE"
-  | "FUN"
-  | "FOR"
-  | "IF"
-  | "NIL"
-  | "OR"
-  | "PRINT"
-  | "RETURN"
-  | "SUPER"
-  | "THIS"
-  | "TRUE"
-  | "VAR"
-  | "WHILE"
-
-  // Utility
-  | "EOF";
-
-export type Token = {
-  readonly type: TokenType;
-  readonly lexme: string;
-  readonly literal: Object | null;
-  readonly line: number;
-};
+function error(line: number, cause: string) {
+  const error = new ScanError(line, "", cause);
+  reportError(error);
+  return error;
+}
 
 const KEYWORDS: Record<string, TokenType> = {
   and: "AND",
@@ -230,7 +183,7 @@ export class Scanner {
     return this.source.charAt(this.current++);
   }
 
-  private addToken(type: TokenType, literal: Object | null = null): void {
+  private addToken(type: TokenType, literal: TokenValue = null): void {
     const text = this.source.slice(this.start, this.current);
     this.tokens.push(newToken(type, text, literal, this.line));
   }
@@ -260,18 +213,4 @@ function isAlpha(char: string) {
 }
 function isAlphaNumeric(char: string): boolean {
   return isAlpha(char) || isDigit(char);
-}
-
-function newToken(
-  type: TokenType,
-  lexme: string,
-  literal: Object | null,
-  line: number
-): Token {
-  return {
-    type,
-    lexme,
-    literal,
-    line,
-  };
 }

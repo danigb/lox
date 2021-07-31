@@ -1,14 +1,23 @@
 let _hadError = false;
 
-export function error(line: number, message: string) {
-  report(line, "", message);
+export class LexError extends Error {
+  public readonly line: number;
+  public readonly where: string;
+  public readonly cause: string;
+
+  constructor(line: number, where: string, cause: string) {
+    super(`[line: ${line}] Error ${where}: ${cause}`);
+    this.line = line;
+    this.where = where;
+    this.cause = cause;
+  }
 }
 
 export function hadError(): boolean {
   return _hadError;
 }
 
-function report(line: number, where: string, message: string) {
+export function reportError(error: LexError) {
+  console.log(error);
   _hadError = true;
-  console.log(`[line: ${line}] Error ${where}: ${message}`);
 }
