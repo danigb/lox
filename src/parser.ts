@@ -4,8 +4,27 @@ import { LexError, reportError } from "./errors.ts";
 
 export class ParseError extends LexError {}
 
+/**
+ * https://craftinginterpreters.com/parsing-expressions.html
+ *
+ * expression     → equality ;
+ * equality       → comparison ( ( "!=" | "==" ) comparison )* ;
+ * comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+ * term           → factor ( ( "-" | "+" ) factor )* ;
+ * factor         → unary ( ( "/" | "*" ) unary )* ;
+ * unary          → ( "!" | "-" ) unary
+ *                | primary ;
+ * primary        → NUMBER | STRING | "true" | "false" | "nil"
+ *                | "(" expression ")" ;
+ */
 export function parse(tokens: Token[]): Expr {
+  // State
   let current = 0;
+
+  // Parse
+  return expression();
+
+  // Grammar
 
   function expression(): Expr {
     return equality();
@@ -81,8 +100,6 @@ export function parse(tokens: Token[]): Expr {
     }
     throw error(peek(), "Invalid primary expression");
   }
-
-  return expression();
 
   // Utilities
 
