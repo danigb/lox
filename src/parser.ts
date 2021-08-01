@@ -14,7 +14,9 @@ export class ParseError extends LexError {}
  * statement      → exprStmt
  *                | printStmt ;
  * varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
- * expression     → equality ;
+ * expression     → assignment ;
+ * assignment     → IDENTIFIER  "=" assignment;
+ *                | equality ;
  * equality       → comparison ( ( "!=" | "==" ) comparison )* ;
  * comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
  * term           → factor ( ( "-" | "+" ) factor )* ;
@@ -73,7 +75,23 @@ export function parse(tokens: Token[]): Stmt[] {
   }
 
   function expression(): Expr {
-    return equality();
+    return assignment();
+  }
+
+  function assignment(): Expr {
+    let expr: Expr = equality();
+    if (match("EQUAL")) {
+      const equals = previous();
+      const value = assignment();
+
+      if (expr.type === "Variable") {
+        const name = expr.name;
+        return { type: "Assign", name, value };
+      }
+
+      error(equals, "Invalid assignment target.");
+    }
+    return expr;
   }
 
   function equality(): Expr {

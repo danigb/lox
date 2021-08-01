@@ -121,6 +121,11 @@ const exprVisitor: ExprVisitor<TokenValue, Environment> = {
   visitVariable(expr, env) {
     return env.get(expr.name);
   },
+  visitAssign(expr, env) {
+    const value = evaluate(expr.value, env);
+    env.assign(expr.name, value);
+    return value;
+  },
 };
 
 function assertNumberOperand(operator: Token, operand: TokenValue): number {

@@ -1,21 +1,23 @@
 import { Token, TokenValue } from "./tokens.ts";
 
-export type Literal = { type: "Literal"; value: TokenValue };
+type Literal = { type: "Literal"; value: TokenValue };
 
-export type Unary = { type: "Unary"; operator: Token; right: Expr };
+type Unary = { type: "Unary"; operator: Token; right: Expr };
 
-export type Grouping = { type: "Grouping"; expr: Expr };
+type Grouping = { type: "Grouping"; expr: Expr };
 
-export type Binary = {
+type Binary = {
   type: "Binary";
   left: Expr;
   operator: Token;
   right: Expr;
 };
 
-export type Variable = { type: "Variable"; name: Token };
+type Variable = { type: "Variable"; name: Token };
 
-export type Expr = Literal | Unary | Grouping | Binary | Variable;
+type Assign = { type: "Assign"; name: Token; value: Expr };
+
+export type Expr = Literal | Unary | Grouping | Binary | Variable | Assign;
 
 export type ExprVisitor<T, C> = {
   visitLiteral(expr: Literal, context: C): T;
@@ -23,6 +25,7 @@ export type ExprVisitor<T, C> = {
   visitGrouping(expr: Grouping, context: C): T;
   visitBinary(expr: Binary, context: C): T;
   visitVariable(expr: Variable, context: C): T;
+  visitAssign(expr: Assign, context: C): T;
 };
 
 export function visitExpr<T, C>(
@@ -41,6 +44,8 @@ export function visitExpr<T, C>(
       return visitor.visitBinary(expr, ctx);
     case "Variable":
       return visitor.visitVariable(expr, ctx);
+    case "Assign":
+      return visitor.visitAssign(expr, ctx);
     default:
       throw new Error("Unknown expression type");
   }
