@@ -1,6 +1,6 @@
 import { readLines } from "https://deno.land/std@0.76.0/io/bufio.ts";
 
-import { Scanner } from "./src/scanner.ts";
+import { scan } from "./src/scanner.ts";
 import { parse } from "./src/parser.ts";
 import { Interpreter } from "./src/interpreter.ts";
 
@@ -17,7 +17,7 @@ async function repl() {
   console.log("> ");
   for await (const line of readLines(Deno.stdin)) {
     const program = line.endsWith(";") ? line : line + ";";
-    const tokens = new Scanner(program).scanTokens();
+    const tokens = scan(program);
     const statements = parse(tokens);
     // console.log({ program, statements, tokens });
     interpreter.run(statements);
@@ -28,7 +28,7 @@ async function repl() {
 async function runFiles(filenames: string[]) {
   for (const filename of filenames) {
     const program = await Deno.readTextFile(filename);
-    const tokens = new Scanner(program).scanTokens();
+    const tokens = scan(program);
     const statements = parse(tokens);
     interpreter.run(statements);
   }

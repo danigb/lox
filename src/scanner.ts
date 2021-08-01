@@ -28,85 +28,73 @@ const KEYWORDS: Record<string, TokenType> = {
   while: "WHILE",
 } as const;
 
-export class Scanner {
-  readonly source: string;
-  readonly tokens: Token[];
-  private start = 0;
-  private current = 0;
-  private line = 1;
+export function scan(source: String) {
+  const tokens: Token[] = [];
+  let start = 0;
+  let current = 0;
+  let line = 1;
 
-  constructor(source: string) {
-    this.source = source;
-    this.tokens = [];
+  while (!isAtEnd()) {
+    // We are at the beginning of the next lexeme.
+    start = current;
+    scanToken();
   }
 
-  scanTokens(): Token[] {
-    while (!this.isAtEnd()) {
-      // We are at the beginning of the next lexeme.
-      this.start = this.current;
-      this.scanToken();
-    }
+  tokens.push(newToken("EOF", "", null, line));
+  return tokens;
 
-    this.tokens.push(newToken("EOF", "", null, this.line));
-    return this.tokens;
-  }
-
-  private isAtEnd(): boolean {
-    return this.current >= this.source.length;
-  }
-
-  private scanToken(): void {
-    const char = this.advance();
+  function scanToken(): void {
+    const char = advance();
     switch (char) {
       case "(":
-        this.addToken("LEFT_PAREN");
+        addToken("LEFT_PAREN");
         break;
       case ")":
-        this.addToken("RIGHT_PAREN");
+        addToken("RIGHT_PAREN");
         break;
       case "{":
-        this.addToken("LEFT_BRACE");
+        addToken("LEFT_BRACE");
         break;
       case "}":
-        this.addToken("RIGHT_BRACE");
+        addToken("RIGHT_BRACE");
         break;
       case ",":
-        this.addToken("COMMA");
+        addToken("COMMA");
         break;
       case ".":
-        this.addToken("DOT");
+        addToken("DOT");
         break;
       case "-":
-        this.addToken("MINUS");
+        addToken("MINUS");
         break;
       case "+":
-        this.addToken("PLUS");
+        addToken("PLUS");
         break;
       case ";":
-        this.addToken("SEMICOLON");
+        addToken("SEMICOLON");
         break;
       case "*":
-        this.addToken("STAR");
+        addToken("STAR");
         break;
       case "!":
-        this.addToken(this.match("=") ? "BANG_EQUAL" : "BANG");
+        addToken(match("=") ? "BANG_EQUAL" : "BANG");
         break;
       case "=":
-        this.addToken(this.match("=") ? "EQUAL_EQUAL" : "EQUAL");
+        addToken(match("=") ? "EQUAL_EQUAL" : "EQUAL");
         break;
       case "<":
-        this.addToken(this.match("=") ? "LESS_EQUAL" : "LESS");
+        addToken(match("=") ? "LESS_EQUAL" : "LESS");
         break;
       case ">":
-        this.addToken(this.match("=") ? "GREATER_EQUAL" : "GREATER");
+        addToken(match("=") ? "GREATER_EQUAL" : "GREATER");
         break;
 
       case "/":
-        if (this.match("/")) {
+        if (match("/")) {
           // A comment goes until the end of the line.
-          while (this.peek() != "\n" && !this.isAtEnd()) this.advance();
+          while (peek() != "\n" && !isAtEnd()) advance();
         } else {
-          this.addToken("SLASH");
+          addToken("SLASH");
         }
         break;
 
@@ -117,94 +105,99 @@ export class Scanner {
         break;
 
       case "\n":
-        this.line++;
+        line++;
         break;
 
       case '"':
-        this.processString();
+        processString();
         break;
 
       default:
         if (isDigit(char)) {
-          this.processNumber();
+          processNumber();
         } else if (isAlpha(char)) {
-          this.processIdentifier();
+          processIdentifier();
         } else {
-          error(this.line, "Unexpected character.");
+          error(line, "Unexpected character.");
         }
     }
   }
 
-  private processString(): void {
-    while (this.peek() != '"' && !this.isAtEnd()) {
-      if (this.peek() == "\n") this.line++;
-      this.advance();
+  // Process complex constructs
+  function processString(): void {
+    while (peek() != '"' && !isAtEnd()) {
+      if (peek() == "\n") line++;
+      advance();
     }
 
-    if (this.isAtEnd()) {
-      error(this.line, "Unterminated string.");
+    if (isAtEnd()) {
+      error(line, "Unterminated string.");
       return;
     }
 
     // The closing ".
-    this.advance();
+    advance();
 
     // Trim the surrounding quotes.
-    const value = this.source.substring(this.start + 1, this.current - 1);
-    this.addToken("STRING", value);
+    const value = source.substring(start + 1, current - 1);
+    addToken("STRING", value);
   }
 
-  private processNumber(): void {
-    while (isDigit(this.peek())) this.advance();
+  function processNumber(): void {
+    while (isDigit(peek())) advance();
 
     // Look for a fractional part.
-    if (this.peek() === "." && isDigit(this.peekNext())) {
+    if (peek() === "." && isDigit(peekNext())) {
       // Consume the "."
-      this.advance();
+      advance();
 
-      while (isDigit(this.peek())) this.advance();
+      while (isDigit(peek())) advance();
     }
 
-    this.addToken(
-      "NUMBER",
-      parseFloat(this.source.substring(this.start, this.current))
-    );
+    addToken("NUMBER", parseFloat(source.substring(start, current)));
   }
 
-  private processIdentifier(): void {
-    while (isAlphaNumeric(this.peek())) this.advance();
+  function processIdentifier(): void {
+    while (isAlphaNumeric(peek())) advance();
 
-    const text = this.source.substring(this.start, this.current);
+    const text = source.substring(start, current);
     const type = KEYWORDS[text];
-    this.addToken(type || "IDENTIFIER");
+    addToken(type || "IDENTIFIER");
   }
 
-  private advance(): string {
-    return this.source.charAt(this.current++);
+  // Utilities
+
+  function isAtEnd(): boolean {
+    return current >= source.length;
   }
 
-  private addToken(type: TokenType, literal: TokenValue = null): void {
-    const text = this.source.slice(this.start, this.current);
-    this.tokens.push(newToken(type, text, literal, this.line));
+  function advance(): string {
+    return source.charAt(current++);
   }
 
-  private match(expected: string): boolean {
-    if (this.isAtEnd()) return false;
-    if (this.source.charAt(this.current) !== expected) return false;
-    this.current++;
+  function addToken(type: TokenType, literal: TokenValue = null): void {
+    const text = source.slice(start, current);
+    tokens.push(newToken(type, text, literal, line));
+  }
+
+  function match(expected: string): boolean {
+    if (isAtEnd()) return false;
+    if (source.charAt(current) !== expected) return false;
+    current++;
     return true;
   }
 
-  private peek(): string {
-    if (this.isAtEnd()) return "\0";
-    return this.source.charAt(this.current);
+  function peek(): string {
+    if (isAtEnd()) return "\0";
+    return source.charAt(current);
   }
 
-  private peekNext(): string {
-    if (this.current + 1 >= this.source.length) return "\0";
-    return this.source.charAt(this.current + 1);
+  function peekNext(): string {
+    if (current + 1 >= source.length) return "\0";
+    return source.charAt(current + 1);
   }
 }
+
 function isDigit(char: string): boolean {
   return "0123456789".includes(char);
 }
