@@ -14,14 +14,20 @@ if (filenames.length === 0) {
 }
 
 async function repl() {
-  console.log("> ");
+  console.log("Write .exit to quit (or Ctrl+D).");
   for await (const line of readLines(Deno.stdin)) {
-    const program = line.endsWith(";") ? line : line + ";";
-    const tokens = scan(program);
-    const statements = parse(tokens);
-    // console.log({ program, statements, tokens });
-    interpreter.run(statements);
-    console.log("> ");
+    if (line === ".exit") return;
+
+    try {
+      const program = line.endsWith(";") ? line : line + ";";
+      const tokens = scan(program);
+      const statements = parse(tokens);
+      // console.log({ program, statements, tokens });
+      interpreter.run(statements);
+      console.log("> ");
+    } catch (err) {
+      console.log(">>> ", err.message);
+    }
   }
 }
 
