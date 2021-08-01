@@ -41,6 +41,12 @@ const stmtVisitor: StmtVisitor<void, Environment> = {
     // FIXME: throw error if no name
     env.define(name, value);
   },
+  visitBlock({ statements }, env) {
+    const child = new Environment(env);
+    for (const stmt of statements) {
+      execute(stmt, child);
+    }
+  },
 };
 
 function evaluate(expr: Expr, env: Environment): TokenValue {

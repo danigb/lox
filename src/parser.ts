@@ -12,7 +12,9 @@ export class ParseError extends LexError {}
  * declaration    → varDecl
  *                | statement ;
  * statement      → exprStmt
- *                | printStmt ;
+ *                | printStmt
+ *                | block ;
+ * block          → "{" declaration* "}"
  * varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
  * expression     → assignment ;
  * assignment     → IDENTIFIER  "=" assignment;
@@ -64,10 +66,20 @@ export function parse(tokens: Token[]): Stmt[] {
 
   function statement(): Stmt {
     if (match("PRINT")) {
+      // Print statement
       const expr = expression();
       consume("SEMICOLON", "Expect ';' after value.");
       return { type: "Print", expr };
+    } else if (match("LEFT_BRACE")) {
+      // Block statement
+      const statements: Stmt[] = [];
+      while (!check("RIGHT_BRACE") && !isAtEnd()) {
+        statements.push(declaration());
+      }
+      consume("RIGHT_BRACE", "Expect '}' after block.");
+      return { type: "Block", statements };
     } else {
+      // Expression statement
       const expr = expression();
       consume("SEMICOLON", "Expect ';' after value.");
       return { type: "Expression", expr };
