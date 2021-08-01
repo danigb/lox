@@ -5,14 +5,21 @@ type ExprStmt = { type: "Expression"; expr: Expr };
 type PrintStmt = { type: "Print"; expr: Expr };
 type VarStmt = { type: "Var"; name: TokenValue; value: Expr | null };
 type BlockStmt = { type: "Block"; statements: Stmt[] };
+type IfStmt = {
+  type: "If";
+  condition: Expr;
+  thenBranch: Stmt;
+  elseBranch: Stmt | null;
+};
 
-export type Stmt = ExprStmt | PrintStmt | VarStmt | BlockStmt;
+export type Stmt = ExprStmt | PrintStmt | VarStmt | BlockStmt | IfStmt;
 
 export type StmtVisitor<T, C> = {
   visitExpression(stmt: ExprStmt, ctx: C): T;
   visitPrint(stmt: PrintStmt, ctx: C): T;
   visitVar(stmt: VarStmt, ctx: C): T;
   visitBlock(stmt: BlockStmt, ctx: C): T;
+  visitIf(stmt: IfStmt, ctx: C): T;
 };
 
 export function visitStmt<T, C>(
@@ -29,5 +36,7 @@ export function visitStmt<T, C>(
       return visitor.visitVar(stmt, ctx);
     case "Block":
       return visitor.visitBlock(stmt, ctx);
+    case "If":
+      return visitor.visitIf(stmt, ctx);
   }
 }

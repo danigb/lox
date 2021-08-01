@@ -12,6 +12,7 @@ export class ParseError extends LexError {}
  * declaration    → varDecl
  *                | statement ;
  * statement      → exprStmt
+ *                | ifStmt
  *                | printStmt
  *                | block ;
  * block          → "{" declaration* "}"
@@ -65,25 +66,36 @@ export function parse(tokens: Token[]): Stmt[] {
   }
 
   function statement(): Stmt {
+    // If statement
+    if (match("IF")) {
+      consume("LEFT_PAREN", "Expect '(' after 'if'.");
+      const condition = expression();
+      consume("RIGHT_PAREN", "Expect ')' after condition.");
+      const thenBranch = statement();
+      const elseBranch = match("ELSE") ? statement() : null;
+      return { type: "If", condition, thenBranch, elseBranch };
+    }
+
+    // Print statement
     if (match("PRINT")) {
-      // Print statement
       const expr = expression();
       consume("SEMICOLON", "Expect ';' after value.");
       return { type: "Print", expr };
-    } else if (match("LEFT_BRACE")) {
-      // Block statement
+    }
+    // Block statement
+    if (match("LEFT_BRACE")) {
       const statements: Stmt[] = [];
       while (!check("RIGHT_BRACE") && !isAtEnd()) {
         statements.push(declaration());
       }
       consume("RIGHT_BRACE", "Expect '}' after block.");
       return { type: "Block", statements };
-    } else {
-      // Expression statement
-      const expr = expression();
-      consume("SEMICOLON", "Expect ';' after value.");
-      return { type: "Expression", expr };
     }
+
+    // Expression statement
+    const expr = expression();
+    consume("SEMICOLON", "Expect ';' after value.");
+    return { type: "Expression", expr };
   }
 
   function expression(): Expr {

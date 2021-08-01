@@ -47,6 +47,14 @@ const stmtVisitor: StmtVisitor<void, Environment> = {
       execute(stmt, child);
     }
   },
+  visitIf(stmt, env) {
+    if (isTruthy(evaluate(stmt.condition, env))) {
+      execute(stmt.thenBranch, env);
+    } else if (stmt.elseBranch) {
+      execute(stmt.elseBranch, env);
+    }
+    return null;
+  },
 };
 
 function evaluate(expr: Expr, env: Environment): TokenValue {
